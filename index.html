@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Background Remover</title>
+
+<style>
+* { 
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+body {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px;
+}
+
+/* MAIN */
+.app {
+    display: flex;
+    width: 900px;
+    height: 500px;
+    background: white;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 25px 50px rgba(0,0,0,0.25);
+}
+
+/* PREVIEW */
+.preview-panel {
+    flex: 1;
+    background: #f4f6fb;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    text-align: center;
+}
+
+.preview-panel img {
+    max-width: 100%;
+    max-height: 300px;
+    border-radius: 10px;
+}
+
+/* CONTROLS */
+.control-panel {
+    width: 320px;
+    padding: 25px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+h1 { margin-bottom: 10px; }
+p { font-size: 14px; margin-bottom: 20px; }
+
+/* UPLOAD */
+.upload-box {
+    border: 2px dashed #ccc;
+    padding: 20px;
+    border-radius: 12px;
+    text-align: center;
+    cursor: pointer;
+}
+
+input { display: none; }
+
+/* BUTTONS */
+button {
+    margin-top: 10px;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    background: #667eea;
+    color: white;
+    cursor: pointer;
+}
+
+.secondary-btn { background: #444; }
+
+/* DOWNLOAD */
+.download-btn {
+    margin-top: 10px;
+    padding: 12px;
+    background: #0072ff;
+    color: white;
+    text-decoration: none;
+    border-radius: 10px;
+    display: block;
+}
+
+/* LOADER */
+.loader {
+    margin-top: 10px;
+    display: none;
+}
+
+/* 📱 MOBILE RESPONSIVE */
+@media (max-width: 768px) {
+    .app {
+        flex-direction: column;
+        width: 100%;
+        height: auto;
+    }
+
+    .preview-panel {
+        height: 250px;
+    }
+
+    .preview-panel img {
+        max-height: 200px;
+    }
+
+    .control-panel {
+        width: 100%;
+        padding: 20px;
+    }
+
+    h1 {
+        font-size: 20px;
+    }
+
+    button, .download-btn {
+        width: 100%;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+    <!-- PREVIEW -->
+    <div class="preview-panel" id="previewPanel">
+        <h3>No Image Selected</h3>
+    </div>
+
+    <!-- CONTROLS -->
+    <div class="control-panel">
+        <h1>Remove Background</h1>
+        <p>Upload your image</p>
+
+        <label class="upload-box">
+            Tap to Upload
+            <input type="file" id="fileInput" accept="image/*">
+        </label>
+
+        <button onclick="removeBackground()">Remove Background</button>
+
+        <div class="loader" id="loader">Processing...</div>
+    </div>
+
+</div>
+
+<script>
+const API_KEY = "G7F2FQNgmqpzGQeMjeXNjjn1";
+let selectedFile;
+
+const previewPanel = document.getElementById("previewPanel");
+
+/* LOAD IMAGE */
+document.getElementById("fileInput").addEventListener("change", function(e) {
+    selectedFile = e.target.files[0];
+    if (!selectedFile) return;
+
+    const imgURL = URL.createObjectURL(selectedFile);
+
+    previewPanel.innerHTML = `
+        <h3>Original Image</h3>
+        <img src="${imgURL}">
+    `;
+});
+
+/* REMOVE BG */
+async function removeBackground() {
+    if (!selectedFile) {
+        alert("Upload image first");
+        return;
+    }
+
+    document.getElementById("loader").style.display = "block";
+
+    const formData = new FormData();
+    formData.append("image_file", selectedFile);
+
+    try {
+        const res = await fetch("https://api.remove.bg/v1.0/removebg", {
+            method: "POST",
+            headers: { "X-Api-Key": API_KEY },
+            body: formData
+        });
+
+        if (!res.ok) throw new Error();
+
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+
+        previewPanel.innerHTML = `
+            <h3>Done</h3>
+            <img src="${url}">
+            <a class="download-btn" href="${url}" download="no-bg.png">Download</a>
+            <button class="secondary-btn" onclick="resetApp()">New Image</button>
+        `;
+
+    } catch {
+        alert("Error: check API");
+    }
+
+    document.getElementById("loader").style.display = "none";
+}
+
+/* RESET */
+function resetApp() {
+    selectedFile = null;
+    document.getElementById("fileInput").value = "";
+    previewPanel.innerHTML = "<h3>No Image Selected</h3>";
+}
+</script>
+
+</body>
+</html>
